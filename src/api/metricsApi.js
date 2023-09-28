@@ -54,16 +54,16 @@ export const getMetricDetail = async (metricId) => {
   }
 };
 
-export const getMonitorValue = async (metricId) => {
+export const getMonitorValues = async (metricId) => {
   try {
-    const response = await axios.get(
-      `http://127.0.0.1:8000/metric/monitor/${metricId}/`
+    const response = await axios.post(
+      `http://127.0.0.1:8000/metric/monitor/?metric_id=${metricId}`
     );
-    const monitorValue = response.data;
-    console.log("getMonitorValue", monitorValue);
+    const monitorValues = response.data;
+    console.log("getMonitorValues", monitorValues);
 
-    return monitorValue;
+    return monitorValues;
   } catch (error) {
-    console.log("getMonitorValue", error);
+    console.log("getMonitorValues", error);
   }
 };

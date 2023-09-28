@@ -7,9 +7,7 @@ import ShowAlerts from "./components/ShowAlerts.vue";
   <h1 class="header">Monitoring Tool for MongoDB</h1>
   <div class="wrapper">
     <div class="alerts">
-      <!-- <div class="show-alerts">Show alerts</div> -->
       <ShowAlerts></ShowAlerts>
-      <div class="show-actions">Show appropriate actions</div>
     </div>
     <div class="metrics">
       <SelectMetric></SelectMetric>
@@ -30,32 +28,11 @@ import ShowAlerts from "./components/ShowAlerts.vue";
 
 .alerts,
 .metrics {
-  border: 3px solid black;
   flex: 1;
   padding: 1rem;
   margin: 1rem;
   display: flex;
   flex-direction: column;
-}
-
-.choose-metrics,
-.show-metrics,
-.show-alerts,
-.show-actions {
-  border: 2px solid blue;
-  margin: 1rem;
-}
-
-.choose-metrics {
-  flex: 1;
-}
-.show-metrics {
-  flex: 4;
-}
-
-.show-alerts,
-.show-actions {
-  flex: 1;
 }
 </style>
 

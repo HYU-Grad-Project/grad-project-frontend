@@ -6,6 +6,7 @@ import {
   getCategoryDetail,
   getMetrics,
   getMetricDetail,
+  getMonitorValues,
 } from "../api/metricsApi";
 
 // onMounted(() => {
@@ -19,6 +20,8 @@ const categoryShown = ref(false);
 const metrics = ref([]);
 const metric = ref();
 const metricShown = ref(false);
+
+const monitorValues = ref([]);
 
 const showCategories = async () => {
   categories.value = await getCategory();
@@ -39,6 +42,7 @@ const showMetrics = async () => {
 const selectMetric = async (chosenMetric) => {
   metricShown.value = false;
   metric.value = await getMetricDetail(chosenMetric.id);
+  monitorValues.value = await getMonitorValues(chosenMetric.id);
 };
 </script>
 
@@ -82,7 +86,7 @@ const selectMetric = async (chosenMetric) => {
       <div
         v-if="categoryShown"
         id="dropdownCategory"
-        class="z-10 bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700"
+        class="absolute z-10 bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700"
       >
         <a
           v-for="category in categories"
@@ -122,7 +126,7 @@ const selectMetric = async (chosenMetric) => {
       <div
         v-if="metricShown"
         id="dropdownMetric"
-        class="z-10 bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700"
+        class="absolute z-10 bg-white divide-y divide-gray-100 rounded-lg shadow dark:bg-gray-700"
       >
         <a
           v-for="metric in metrics"
@@ -135,12 +139,43 @@ const selectMetric = async (chosenMetric) => {
       </div>
     </div>
   </div>
-  <div v-if="category" class="m-4">
-    <div>Category: {{ category.name }}</div>
-    <div>Description: {{ category.description }}</div>
-  </div>
-  <div v-if="metric" class="m-4">
-    <div>Metric: {{ metric.name }}</div>
-    <div>Description: {{ metric.description }}</div>
+
+  <div class="relative top-20">
+    <div class="border-solid border-2 border-sky-500 rounded-lg p-4 m-4">
+      <div>
+        <span class="font-bold">Category : </span>
+        <span v-if="category">{{ category.name }}</span>
+      </div>
+      <div>
+        <span class="font-bold">Description : </span>
+        <span v-if="category">{{ category.description }}</span>
+      </div>
+    </div>
+    <div class="border-solid border-2 border-green-500 rounded-lg p-4 m-4">
+      <div>
+        <span class="font-bold">Metric : </span>
+        <span v-if="metric">{{ metric.name }}</span>
+      </div>
+      <div>
+        <span class="font-bold">Description : </span>
+        <span v-if="metric">{{ metric.description }}</span>
+      </div>
+    </div>
+    <div
+      v-if="monitorValues"
+      v-for="monitorValue in monitorValues"
+      :key="monitorValue.id"
+    >
+      <div class="border-solid border-2 border-pink-500 rounded-lg p-4 m-4">
+        <div>
+          <span class="font-bold">Pod name : </span>
+          <span v-if="monitorValue">{{ monitorValue.pod_name }}</span>
+        </div>
+        <div>
+          <span class="font-bold">Value : </span>
+          <span v-if="monitorValue">{{ monitorValue.value }}</span>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
