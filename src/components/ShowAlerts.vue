@@ -46,6 +46,8 @@ const toggleAlertDetails = (alertId) => {
             class="border-solid border-2 border-pink-300 bg-pink-50 rounded-lg p-4 m-4"
           >
             <div class="cursor-pointer" @click="toggleAlertDetails(alert.id)">
+              <span v-if="!expanded[alert.id]">▷ </span>
+              <span v-else>▽ </span>
               <strong>Rule Name: {{ alert.rule_name }} </strong> ({{
                 alert.id
               }})
@@ -72,6 +74,8 @@ const toggleAlertDetails = (alertId) => {
             class="border-solid border-2 border-green-300 bg-green-50 rounded-lg p-4 m-4"
           >
             <div class="cursor-pointer" @click="toggleAlertDetails(alert.id)">
+              <span v-if="!expanded[alert.id]">▷ </span>
+              <span v-else>▽ </span>
               <strong>Rule Name: {{ alert.rule_name }} </strong> ({{
                 alert.id
               }})

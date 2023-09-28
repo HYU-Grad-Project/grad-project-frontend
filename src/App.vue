@@ -4,7 +4,11 @@ import ShowAlerts from "./components/ShowAlerts.vue";
 </script>
 
 <template>
-  <h1 class="header">Monitoring Tool for MongoDB</h1>
+  <h1
+    class="flex justify-center m-4 text-4xl leading-none tracking-tight text-gray-900 md:text-5xl lg:text-6xl dark:text-white"
+  >
+    Monitoring Tool for MongoDB
+  </h1>
   <div class="wrapper">
     <div class="alerts">
       <ShowAlerts></ShowAlerts>
@@ -16,11 +20,6 @@ import ShowAlerts from "./components/ShowAlerts.vue";
 </template>
 
 <style scoped>
-.header {
-  display: flex;
-  justify-content: center;
-  font-size: 50px;
-}
 .wrapper {
   display: flex;
   height: 80vh;
