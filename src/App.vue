@@ -9,10 +9,12 @@ import ShowAlerts from "./components/ShowAlerts.vue";
   >
     Monitoring Tool for MongoDB
   </h1>
+  <hr class="border-blue-200" />
   <div class="wrapper">
     <div class="alerts">
       <ShowAlerts></ShowAlerts>
     </div>
+    <div class="w-[1px] h-[90vh] bg-blue-200"></div>
     <div class="metrics">
       <SelectMetric></SelectMetric>
     </div>

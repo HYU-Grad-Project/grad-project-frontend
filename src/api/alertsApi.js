@@ -1,9 +1,9 @@
 import axios from "axios";
 
-export const getAlerts = async (resolved) => {
+export const getAlerts = async (resolved, ruleId) => {
   try {
     const response = await axios.get(
-      `http://127.0.0.1:8000/alert/?resolved=${resolved}`
+      `http://127.0.0.1:8000/alert/?resolved=${resolved}&rule_id=${ruleId}`
     );
     const alerts = response.data;
     console.log("getAlerts", alerts);
@@ -23,5 +23,22 @@ export const getAlertDetail = async (alertId) => {
     return alertDetail;
   } catch (error) {
     console.log("getAlertDetail", error);
+  }
+};
+
+export const resolveAlert2 = async (maxIncomingConnections) => {
+  try {
+    const response = await axios.post(
+      "http://127.0.0.1:8000/alert/follow_up_2/",
+      {
+        maxIncomingConnections: maxIncomingConnections,
+      }
+    );
+    const responseMessage = response.data;
+    console.log("resolveAlert2", responseMessage);
+
+    return responseMessage;
+  } catch (error) {
+    console.log("resolveAlert2", error);
   }
 };
