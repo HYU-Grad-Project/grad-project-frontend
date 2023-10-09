@@ -4,8 +4,11 @@ import ShowAlerts from "./components/ShowAlerts.vue";
 </script>
 
 <template>
-  <h1
+  <!-- <h1
     class="flex justify-center m-4 text-4xl leading-none tracking-tight text-gray-900 md:text-5xl lg:text-6xl dark:text-white"
+  > -->
+  <h1
+    class="flex justify-center p-4 text-4xl leading-none tracking-tight bg-sky-50 text-blue-900 md:text-5xl lg:text-6xl dark:text-white"
   >
     Monitoring Tool for MongoDB
   </h1>
