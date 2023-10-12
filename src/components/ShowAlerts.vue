@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from "vue";
-import { getAlerts, resolveAlert2 } from "../api/alertsApi";
+import { getAlertAdvice, getAlerts, resolveAlert } from "../api/alertsApi";
 import { getRules } from "../api/rulesApi";
 
 const unresolvedAlerts = ref([]);
@@ -20,15 +20,17 @@ const showResolvedAlerts = async (ruleId) => {
 const toggleAlertDetails = (alertId) => {
   expanded.value[alertId] = !expanded.value[alertId];
 };
-const resolveAlert = (ruleName) => {
-  if (ruleName === "MongodbTooManyConnections") {
-    const userInput = prompt("Enter MaxIncomingConnections");
-    if (isNaN(userInput)) {
-      alert("Enter a number");
-      return;
-    }
-    resolveAlert2(Number(userInput));
+const getAdviceAndResolveAlert = async (alertId) => {
+  const alertAdvice = await getAlertAdvice(alertId);
+  const userInput = prompt(
+    `Enter value for ${alertAdvice.relevant_key_name}.\n(Current Value: ${alertAdvice.current_value}, Recommended Value: ${alertAdvice.recommended_value})`
+  );
+  if (isNaN(userInput)) {
+    alert("Enter a number.");
+    return;
   }
+
+  resolveAlert(alertId, Number(userInput));
 };
 
 const retrieveRules = async () => {
@@ -109,7 +111,7 @@ const retrieveRules = async () => {
                 <button
                   type="button"
                   class="mt-4 text-yellow-400 hover:text-white border border-yellow-400 hover:bg-yellow-500 focus:ring-4 focus:outline-none focus:ring-yellow-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:border-yellow-300 dark:text-yellow-300 dark:hover:text-white dark:hover:bg-yellow-400 dark:focus:ring-yellow-900"
-                  @click="resolveAlert(alert.rule_name)"
+                  @click="getAdviceAndResolveAlert(alert.id)"
                 >
                   Resolve
                 </button>

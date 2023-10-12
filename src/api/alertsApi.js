@@ -25,20 +25,34 @@ export const getAlertDetail = async (alertId) => {
     console.log("getAlertDetail", error);
   }
 };
+export const getAlertAdvice = async (alertId) => {
+  try {
+    const response = await axios.post("http://127.0.0.1:8000/alert/advice/", {
+      alert_id: alertId,
+    });
+    const alertAdvice = response.data;
+    console.log("getAlertAdvice", alertAdvice);
 
-export const resolveAlert2 = async (maxIncomingConnections) => {
+    return alertAdvice;
+  } catch (error) {
+    console.log("getAlertAdvice", error);
+  }
+};
+
+export const resolveAlert = async (alertId, value) => {
   try {
     const response = await axios.post(
-      "http://127.0.0.1:8000/alert/follow_up_2/",
+      "http://127.0.0.1:8000/alert/follow_up/",
       {
-        maxIncomingConnections: maxIncomingConnections,
+        alert_id: alertId,
+        value: value,
       }
     );
     const responseMessage = response.data;
-    console.log("resolveAlert2", responseMessage);
+    console.log("resolveAlert", responseMessage);
 
     return responseMessage;
   } catch (error) {
-    console.log("resolveAlert2", error);
+    console.log("resolveAlert", error);
   }
 };
