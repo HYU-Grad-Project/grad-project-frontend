@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref } from "vue";
 
 import {
   getCategory,
@@ -24,25 +24,29 @@ const showCategories = async () => {
   categoryShown.value = !categoryShown.value;
   metricShown.value = false;
 };
-const selectCategory = async (chosenCategory) => {
+const selectCategory = async (categoryId) => {
   categoryShown.value = false;
-  category.value = await getCategoryDetail(chosenCategory.id);
+  category.value = await getCategoryDetail(categoryId);
 
   metric.value = "";
   monitorValues.value = [];
 };
 
 const showMetrics = async () => {
-  console.log(category.value.id);
   metrics.value = await getMetrics(category.value.id);
   metricShown.value = !metricShown.value;
   categoryShown.value = false;
 };
-const selectMetric = async (chosenMetric) => {
+const selectMetric = async (metricId) => {
   metricShown.value = false;
-  metric.value = await getMetricDetail(chosenMetric.id);
-  monitorValues.value = await getMonitorValues(chosenMetric.id);
+  metric.value = await getMetricDetail(metricId);
+  monitorValues.value = await getMonitorValues(metricId);
 };
+
+defineExpose({
+  selectCategory,
+  selectMetric,
+});
 </script>
 
 <template>
@@ -92,7 +96,7 @@ const selectMetric = async (chosenMetric) => {
             v-for="category in categories"
             :key="category.id"
             href="#"
-            @click="selectCategory(category)"
+            @click="selectCategory(category.id)"
             class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
             >{{ category.name }}
           </a>
@@ -132,7 +136,7 @@ const selectMetric = async (chosenMetric) => {
             v-for="metric in metrics"
             :key="metric.id"
             href="#"
-            @click="selectMetric(metric)"
+            @click="selectMetric(metric.id)"
             class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
             >{{ metric.name }}
           </a>

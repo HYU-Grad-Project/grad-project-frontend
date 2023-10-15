@@ -1,6 +1,14 @@
 <script setup>
 import SelectMetric from "./components/SelectMetric.vue";
 import ShowAlerts from "./components/ShowAlerts.vue";
+import { ref } from "vue";
+
+const selectMetricRef = ref();
+const getCategoryAndMetric = (metricInfo) => {
+  console.log(metricInfo[0], metricInfo[1]);
+  selectMetricRef.value.selectCategory(metricInfo[0]);
+  selectMetricRef.value.selectMetric(metricInfo[1]);
+};
 </script>
 
 <template>
@@ -15,11 +23,17 @@ import ShowAlerts from "./components/ShowAlerts.vue";
   <hr class="border-blue-200" />
   <div class="wrapper">
     <div class="alerts">
-      <ShowAlerts></ShowAlerts>
+      <ShowAlerts
+        @emit-metric="
+          (metricInfo) => {
+            getCategoryAndMetric(metricInfo);
+          }
+        "
+      ></ShowAlerts>
     </div>
     <div class="w-[1px] h-[90vh] bg-blue-200"></div>
     <div class="metrics">
-      <SelectMetric></SelectMetric>
+      <SelectMetric ref="selectMetricRef"></SelectMetric>
     </div>
   </div>
 </template>
