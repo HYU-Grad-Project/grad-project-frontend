@@ -5,7 +5,6 @@ import { ref } from "vue";
 
 const selectMetricRef = ref();
 const getCategoryAndMetric = (metricInfo) => {
-  console.log(metricInfo[0], metricInfo[1]);
   selectMetricRef.value.selectCategory(metricInfo[0]);
   selectMetricRef.value.selectMetric(metricInfo[1]);
 };

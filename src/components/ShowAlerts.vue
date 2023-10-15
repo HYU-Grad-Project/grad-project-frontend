@@ -5,7 +5,12 @@
 // });
 
 import { ref, onMounted } from "vue";
-import { getAlertAdvice, getAlerts, resolveAlert } from "../api/alertsApi";
+import {
+  getAlertAdvice,
+  getAlertDetail,
+  getAlerts,
+  resolveAlert,
+} from "../api/alertsApi";
 import { getRules } from "../api/rulesApi";
 
 const showModal = ref(false);
@@ -21,6 +26,9 @@ const rules = ref([]);
 const userInput = ref("");
 const expandedRules = ref({});
 
+const advice = ref();
+const alertDetail = ref();
+
 onMounted(async () => {
   rules.value = await getRules();
 });
@@ -34,22 +42,19 @@ const showResolvedAlerts = async (ruleId) => {
 const toggleAlertDetails = (alertId) => {
   expanded.value[alertId] = !expanded.value[alertId];
 };
-const getAdviceAndResolveAlert = async (alertId) => {
-  const alertAdvice = await getAlertAdvice(alertId);
-  const userInput = prompt(
-    `Enter value for ${alertAdvice.relevant_key_name}.\n(Current Value: ${alertAdvice.current_value}, Recommended Value: ${alertAdvice.recommended_value})`,
-    alertAdvice.recommended_value
-  );
 
-  if (isNaN(userInput) || userInput === "") {
+const getAdviceAndAlertDetail = async (alertId) => {
+  advice.value = await getAlertAdvice(alertId);
+  alertDetail.value = await getAlertDetail(alertId);
+};
+const resolveChosenAlert = async (alertId) => {
+  if (isNaN(userInput.value) || userInput.value === "") {
     alert("Enter a number.");
     return;
   }
-  if (userInput === null) {
-    return;
-  }
-  console.log(Number(userInput));
-  resolveAlert(alertId, Number(userInput));
+  console.log(Number(userInput.value));
+  resolveAlert(alertId, Number(userInput.value));
+  showModal.value = false;
 };
 
 const toggleRuleDetails = (ruleId) => {
@@ -62,7 +67,7 @@ const toggleRuleDetails = (ruleId) => {
     <div class="flex justify-center">
       <button
         type="button"
-        class="focus:outline-none text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-800"
+        class="focus:outline-none text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2"
         @click="
           () => {
             showUnresolvedAlerts(selectedRule_unresolved);
@@ -74,10 +79,11 @@ const toggleRuleDetails = (ruleId) => {
       </button>
       <button
         type="button"
-        class="focus:outline-none text-white bg-yellow-700 hover:bg-yellow-800 focus:ring-4 focus:ring-yellow-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-yellow-600 dark:hover:bg-yellow-700 dark:focus:ring-yellow-800"
+        class="focus:outline-none text-white bg-yellow-700 hover:bg-yellow-800 focus:ring-4 focus:ring-yellow-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2"
         @click="
           () => {
             showResolved = !showResolved;
+            showModal = false;
           }
         "
       >
@@ -121,69 +127,68 @@ const toggleRuleDetails = (ruleId) => {
               <div><strong>Pod Name:</strong> {{ alert.pod_name }}</div>
               <div><strong>Created At:</strong> {{ alert.created_at }}</div>
               <div class="text-center">
-                <!-- <button
-                  type="button"
-                  class="mt-4 text-yellow-400 hover:text-white border border-yellow-400 hover:bg-yellow-500 focus:ring-4 focus:outline-none focus:ring-yellow-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:border-yellow-300 dark:text-yellow-300 dark:hover:text-white dark:hover:bg-yellow-400 dark:focus:ring-yellow-900"
-                  @click="getAdviceAndResolveAlert(alert.id)"
-                > -->
                 <button
                   type="button"
-                  class="mt-4 text-yellow-400 hover:text-white border border-yellow-400 hover:bg-yellow-500 focus:ring-4 focus:outline-none focus:ring-yellow-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:border-yellow-300 dark:text-yellow-300 dark:hover:text-white dark:hover:bg-yellow-400 dark:focus:ring-yellow-900"
+                  class="mt-4 text-yellow-400 hover:text-white border border-yellow-400 hover:bg-yellow-500 focus:ring-4 focus:outline-none focus:ring-yellow-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center"
                   @click="
-                    () => {
+                    async () => {
+                      await getAdviceAndAlertDetail(alert.id);
+                      userInput = advice.recommended_value;
                       showModal = true;
                     }
                   "
                 >
                   Resolve
                 </button>
-                <!-- Main modal -->
                 <div
                   v-if="showModal"
                   class="flex flex-col justify-between fixed top-1/2 left-4 transform -translate-y-1/2 w-1/2 h-1/2 p-4 rounded-lg shadow-gray-700 shadow-2xl bg-blue-50"
                 >
                   <div class="text-left">
-                    <strong>Rule Name:</strong> {{ alert.rule.name }}
+                    <strong>Rule Name:</strong> {{ alertDetail.rule.name }}
                   </div>
                   <div class="text-left">
-                    <strong>Expression:</strong> {{ alert.rule.expr }}
+                    <strong>Expression:</strong> {{ alertDetail.rule.expr }}
                   </div>
-                  <div class="text-left"><strong>Metrics:</strong></div>
-                  <div
-                    class="text-left"
-                    v-for="metric in alert.rule.metrics"
-                    :key="metric.id"
-                  >
-                    <button
-                      class="text-green-900 bg-green-50 border-green-300 border-[1px] rounded-lg p-1"
-                      @click="
-                        $emit('emitMetric', [metric.category_id, metric.id])
-                      "
-                    >
-                      {{ metric.name }}
-                    </button>
+                  <div class="flex">
+                    <div><strong>Metrics:</strong></div>
+                    <div>
+                      <button
+                        class="text-green-900 bg-green-50 border-green-300 border-[1px] rounded-lg px-1 m-1 hover:border-green-500"
+                        v-for="metric in alertDetail.rule.metrics"
+                        :key="metric.id"
+                        @click="
+                          $emit('emitMetric', [metric.category_id, metric.id])
+                        "
+                      >
+                        {{ metric.name }}
+                      </button>
+                    </div>
                   </div>
-                  <div class="text-left"><strong>Query Value:</strong></div>
                   <div class="text-left">
-                    <strong>Recommended Value:</strong>
+                    <strong>Key to modify: </strong>
+                    {{ alertDetail.rule.relevant_key_name }} (current:
+                    {{ advice.current_value }},
+                    <span class="text-purple-700">
+                      recommended: {{ advice.recommended_value }}</span
+                    >)
                   </div>
                   <div>
-                    <strong>Enter Value:</strong
-                    ><input class="ml-4" v-model="userInput" />
+                    <strong
+                      >Enter new '{{
+                        alertDetail.rule.relevant_key_name
+                      }}':</strong
+                    ><input class="ml-4 p-1" v-model="userInput" />
                   </div>
                   <div>
                     <button
-                      class="focus:outline-none text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800"
-                      @click="
-                        () => {
-                          showModal = false;
-                        }
-                      "
+                      class="focus:outline-none text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2"
+                      @click="resolveChosenAlert(alertDetail.id)"
                     >
                       Submit
                     </button>
                     <button
-                      class="focus:outline-none text-white bg-gray-700 hover:bg-gray-800 focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-800"
+                      class="focus:outline-none text-white bg-gray-700 hover:bg-gray-800 focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2"
                       @click="
                         () => {
                           showModal = false;
@@ -236,6 +241,58 @@ const toggleRuleDetails = (ruleId) => {
               <div><strong>Pod Name:</strong> {{ alert.pod_name }}</div>
               <div><strong>Created At:</strong> {{ alert.created_at }}</div>
               <div><strong>Resolved At:</strong> {{ alert.resolved_at }}</div>
+              <div class="text-center">
+                <button
+                  type="button"
+                  class="mt-4 text-yellow-400 hover:text-white border border-yellow-400 hover:bg-yellow-500 focus:ring-4 focus:outline-none focus:ring-yellow-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center"
+                  @click="
+                    async () => {
+                      await getAdviceAndAlertDetail(alert.id);
+                      showModal = true;
+                    }
+                  "
+                >
+                  Rule Detail
+                </button>
+                <div
+                  v-if="showModal"
+                  class="flex flex-col justify-between fixed top-1/2 left-4 transform -translate-y-1/2 w-1/2 h-1/3 p-4 rounded-lg shadow-gray-700 shadow-2xl bg-green-50"
+                >
+                  <div class="text-left">
+                    <strong>Rule Name:</strong> {{ alertDetail.rule.name }}
+                  </div>
+                  <div class="text-left">
+                    <strong>Expression:</strong> {{ alertDetail.rule.expr }}
+                  </div>
+                  <div class="flex">
+                    <div><strong>Metrics:</strong></div>
+                    <div>
+                      <button
+                        class="text-blue-900 bg-blue-50 border-blue-300 border-[1px] rounded-lg px-1 m-1 hover:border-blue-500"
+                        v-for="metric in alertDetail.rule.metrics"
+                        :key="metric.id"
+                        @click="
+                          $emit('emitMetric', [metric.category_id, metric.id])
+                        "
+                      >
+                        {{ metric.name }}
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <button
+                      class="focus:outline-none text-white bg-gray-700 hover:bg-gray-800 focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2"
+                      @click="
+                        () => {
+                          showModal = false;
+                        }
+                      "
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -263,6 +320,17 @@ const toggleRuleDetails = (ruleId) => {
               <div><strong>Description:</strong> {{ rule.description }}</div>
               <div>
                 <strong>Relevant Key Name:</strong> {{ rule.relevant_key_name }}
+              </div>
+              <div><strong>Metrics:</strong></div>
+              <div>
+                <button
+                  class="text-black bg-gray-100 border-gray-400 border-[1px] rounded-lg px-1 m-1 hover:border-gray-500 hover:bg-gray-200"
+                  v-for="metric in rule.metrics"
+                  :key="metric.id"
+                  @click="$emit('emitMetric', [metric.category_id, metric.id])"
+                >
+                  {{ metric.name }}
+                </button>
               </div>
             </div>
           </div>
