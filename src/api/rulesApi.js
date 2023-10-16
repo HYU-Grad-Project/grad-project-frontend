@@ -23,3 +23,17 @@ export const getRuleDetail = async (ruleId) => {
     console.log("getRuleDetail", error);
   }
 };
+
+export const getRuleValues = async (ruleId) => {
+  try {
+    const response = await axios.post(
+      `http://127.0.0.1:8000/rule/monitor/?rule_id=${ruleId}`
+    );
+    const ruleValues = response.data;
+    console.log("getRuleValues", ruleValues);
+
+    return ruleValues;
+  } catch (error) {
+    console.log("getRuleValues", error);
+  }
+};

@@ -11,7 +11,7 @@ import {
   getAlerts,
   resolveAlert,
 } from "../api/alertsApi";
-import { getRules } from "../api/rulesApi";
+import { getRuleValues, getRules } from "../api/rulesApi";
 
 const showModal = ref(false);
 const showResolved = ref(false);
@@ -25,12 +25,21 @@ const selectedRule_unresolved = ref("0");
 const rules = ref([]);
 const userInput = ref("");
 const expandedRules = ref({});
+const ruleValueList = ref([]);
 
 const advice = ref();
 const alertDetail = ref();
+const expressionParts = ref([]);
+const metricList = ref({});
 
 onMounted(async () => {
   rules.value = await getRules();
+  rules.value.forEach((rule) => {
+    rule.metrics.forEach((metric) => {
+      metricList.value[metric.name] = [metric.category_id, metric.id];
+    });
+  });
+  console.log(metricList.value);
 });
 
 const showUnresolvedAlerts = async (ruleId) => {
@@ -47,6 +56,41 @@ const getAdviceAndAlertDetail = async (alertId) => {
   advice.value = await getAlertAdvice(alertId);
   alertDetail.value = await getAlertDetail(alertId);
 };
+
+const convertExpr = (expression) => {
+  const metricRegex = /([a-zA-Z_]+)/g;
+  expressionParts.value = [];
+
+  let matches;
+  let currentIndex = 0;
+  while ((matches = metricRegex.exec(expression)) !== null) {
+    const match = matches[0];
+    const startIndex = matches.index;
+    const endIndex = startIndex + match.length;
+
+    // Text before the metric
+    if (startIndex > currentIndex) {
+      expressionParts.value.push({
+        type: "text",
+        text: expression.substring(currentIndex, startIndex),
+      });
+    }
+
+    // Metric itself
+    expressionParts.value.push({ type: "metric", metric: match });
+
+    currentIndex = endIndex;
+  }
+
+  // Add any remaining text after the last metric
+  if (currentIndex < expression.length) {
+    expressionParts.value.push({
+      type: "text",
+      text: expression.substring(currentIndex),
+    });
+  }
+};
+
 const resolveChosenAlert = async (alertId) => {
   if (isNaN(userInput.value) || userInput.value === "") {
     alert("Enter a number.");
@@ -59,6 +103,9 @@ const resolveChosenAlert = async (alertId) => {
 
 const toggleRuleDetails = (ruleId) => {
   expandedRules.value[ruleId] = !expandedRules.value[ruleId];
+};
+const setRuleValueList = async (ruleId) => {
+  ruleValueList.value = await getRuleValues(ruleId);
 };
 </script>
 
@@ -133,6 +180,8 @@ const toggleRuleDetails = (ruleId) => {
                   @click="
                     async () => {
                       await getAdviceAndAlertDetail(alert.id);
+                      await setRuleValueList(alert.rule.id);
+                      convertExpr(alertDetail.rule.expr);
                       userInput = advice.recommended_value;
                       showModal = true;
                     }
@@ -142,15 +191,49 @@ const toggleRuleDetails = (ruleId) => {
                 </button>
                 <div
                   v-if="showModal"
-                  class="flex flex-col justify-between fixed top-1/2 left-4 transform -translate-y-1/2 w-1/2 h-1/2 p-4 rounded-lg shadow-gray-700 shadow-2xl bg-blue-50"
+                  class="flex flex-col justify-between fixed top-1/2 left-4 transform -translate-y-1/2 w-1/2 h-fit p-4 rounded-lg shadow-gray-700 shadow-2xl bg-blue-50"
                 >
                   <div class="text-left">
                     <strong>Rule Name:</strong> {{ alertDetail.rule.name }}
                   </div>
-                  <div class="text-left">
+                  <hr class="border-blue-900 border-[1px] my-2" />
+                  <!-- <div class="text-left">
                     <strong>Expression:</strong> {{ alertDetail.rule.expr }}
+                  </div> -->
+                  <div class="text-left">
+                    <strong>Expression:</strong>
+                    <div>
+                      <span
+                        v-for="(part, index) in expressionParts"
+                        :key="index"
+                      >
+                        <span v-if="part.type === 'text'">{{ part.text }}</span>
+                        <button
+                          v-else
+                          class="text-blue-600 hover:text-blue-900"
+                          @click="$emit('emitMetric', metricList[part.metric])"
+                        >
+                          {{ part.metric }}
+                        </button>
+                      </span>
+                    </div>
                   </div>
-                  <div class="flex">
+                  <hr class="border-blue-900 border-[1px] my-2" />
+                  <div class="text-left">
+                    <strong>Current Status:</strong>
+                    <div class="flex justify-center">
+                      <div
+                        class="border-2 rounded-lg bg-white border-blue-400 p-2 w-fit my-2"
+                      >
+                        <div v-for="ruleValue in ruleValueList">
+                          <strong>Pod: </strong>{{ ruleValue.pod_name }},
+                          <strong>Value: </strong>{{ ruleValue.value }}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <hr class="border-blue-900 border-[1px] my-2" />
+                  <!-- <div class="flex">
                     <div><strong>Metrics:</strong></div>
                     <div>
                       <button
@@ -164,7 +247,8 @@ const toggleRuleDetails = (ruleId) => {
                         {{ metric.name }}
                       </button>
                     </div>
-                  </div>
+                  </div> -->
+                  <!-- <hr class="border-blue-900 border-[1px] my-2" /> -->
                   <div class="text-left">
                     <strong>Key to modify: </strong>
                     {{ alertDetail.rule.relevant_key_name }} (current:
@@ -173,14 +257,14 @@ const toggleRuleDetails = (ruleId) => {
                       recommended: {{ advice.recommended_value }}</span
                     >)
                   </div>
-                  <div>
+                  <div class="my-2">
                     <strong
                       >Enter new '{{
                         alertDetail.rule.relevant_key_name
                       }}':</strong
                     ><input class="ml-4 p-1" v-model="userInput" />
                   </div>
-                  <div>
+                  <div class="mt-2">
                     <button
                       class="focus:outline-none text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2"
                       @click="resolveChosenAlert(alertDetail.id)"
@@ -248,6 +332,7 @@ const toggleRuleDetails = (ruleId) => {
                   @click="
                     async () => {
                       await getAdviceAndAlertDetail(alert.id);
+                      convertExpr(alertDetail.rule.expr);
                       showModal = true;
                     }
                   "
@@ -256,15 +341,45 @@ const toggleRuleDetails = (ruleId) => {
                 </button>
                 <div
                   v-if="showModal"
-                  class="flex flex-col justify-between fixed top-1/2 left-4 transform -translate-y-1/2 w-1/2 h-1/3 p-4 rounded-lg shadow-gray-700 shadow-2xl bg-green-50"
+                  class="flex flex-col justify-between fixed top-1/2 left-4 transform -translate-y-1/2 w-1/2 h-fit p-4 rounded-lg shadow-gray-700 shadow-2xl bg-green-50"
                 >
                   <div class="text-left">
                     <strong>Rule Name:</strong> {{ alertDetail.rule.name }}
                   </div>
-                  <div class="text-left">
+                  <hr class="border-blue-900 border-[1px] my-2" />
+                  <!-- <div class="text-left">
                     <strong>Expression:</strong> {{ alertDetail.rule.expr }}
+                  </div> -->
+                  <div class="text-left">
+                    <strong>Expression:</strong>
                   </div>
-                  <div class="flex">
+                  <div>
+                    <span v-for="(part, index) in expressionParts" :key="index">
+                      <span v-if="part.type === 'text'">{{ part.text }}</span>
+                      <button
+                        v-else
+                        class="text-blue-600 hover:text-blue-900"
+                        @click="$emit('emitMetric', metricList[part.metric])"
+                      >
+                        {{ part.metric }}
+                      </button>
+                    </span>
+                  </div>
+                  <hr class="border-blue-900 border-[1px] my-2" />
+                  <div class="text-left">
+                    <strong>Current Status:</strong>
+                    <div class="flex justify-center">
+                      <div
+                        class="border-2 rounded-lg bg-white border-blue-400 p-2 w-fit my-2"
+                      >
+                        <div v-for="ruleValue in ruleValueList">
+                          <strong>Pod: </strong>{{ ruleValue.pod_name }},
+                          <strong>Value: </strong>{{ ruleValue.value }}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- <div class="flex">
                     <div><strong>Metrics:</strong></div>
                     <div>
                       <button
@@ -278,8 +393,8 @@ const toggleRuleDetails = (ruleId) => {
                         {{ metric.name }}
                       </button>
                     </div>
-                  </div>
-                  <div>
+                  </div> -->
+                  <div class="mt-4">
                     <button
                       class="focus:outline-none text-white bg-gray-700 hover:bg-gray-800 focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2"
                       @click="
@@ -308,20 +423,41 @@ const toggleRuleDetails = (ruleId) => {
           <div
             class="border-solid border-2 border-gray-500 bg-gray-50 rounded-lg p-4 m-4"
           >
-            <div class="cursor-pointer" @click="toggleRuleDetails(rule.id)">
+            <div
+              class="cursor-pointer"
+              @click="
+                () => {
+                  convertExpr(rule.expr);
+                  toggleRuleDetails(rule.id);
+                }
+              "
+            >
               <span v-if="!expandedRules[rule.id]">▷ </span>
               <span v-else>▽ </span>
               <strong>{{ rule.name }}</strong>
             </div>
             <div v-if="expandedRules[rule.id]">
               <div>------------------------------------------</div>
-              <div><strong>Expression:</strong> {{ rule.expr }}</div>
+              <!-- <div><strong>Expression:</strong> {{ rule.expr }}</div> -->
+              <div><strong>Expression:</strong></div>
+              <div>
+                <span v-for="(part, index) in expressionParts" :key="index">
+                  <span v-if="part.type === 'text'">{{ part.text }}</span>
+                  <button
+                    v-else
+                    class="text-blue-600 hover:text-blue-900"
+                    @click="$emit('emitMetric', metricList[part.metric])"
+                  >
+                    {{ part.metric }}
+                  </button>
+                </span>
+              </div>
               <div><strong>Severity:</strong> {{ rule.severity }}</div>
               <div><strong>Description:</strong> {{ rule.description }}</div>
               <div>
                 <strong>Relevant Key Name:</strong> {{ rule.relevant_key_name }}
               </div>
-              <div><strong>Metrics:</strong></div>
+              <!-- <div><strong>Metrics:</strong></div>
               <div>
                 <button
                   class="text-black bg-gray-100 border-gray-400 border-[1px] rounded-lg px-1 m-1 hover:border-gray-500 hover:bg-gray-200"
@@ -331,7 +467,7 @@ const toggleRuleDetails = (ruleId) => {
                 >
                   {{ metric.name }}
                 </button>
-              </div>
+              </div> -->
             </div>
           </div>
         </div>
