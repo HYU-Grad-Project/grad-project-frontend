@@ -25,7 +25,6 @@ const ruleValueList = ref([]);
 const advice = ref();
 const alertDetail = ref();
 const metricList = ref({});
-
 const convertedExpr = ref({});
 
 onMounted(async () => {
@@ -117,6 +116,7 @@ const setRuleValueList = async (ruleId) => {
           () => {
             showUnresolvedAlerts(selectedRule_unresolved);
             showResolvedAlerts(selectedRule_resolved);
+            showModal = false;
           }
         "
       >
@@ -332,7 +332,6 @@ const setRuleValueList = async (ruleId) => {
                     async () => {
                       await getAdviceAndAlertDetail(alert.id);
                       await setRuleValueList(alert.rule.id);
-                      convertExpr(alertDetail.rule.expr);
                       showModal = true;
                     }
                   "
@@ -428,15 +427,7 @@ const setRuleValueList = async (ruleId) => {
           <div
             class="border-solid border-2 border-gray-500 bg-gray-50 rounded-lg p-4 m-4"
           >
-            <div
-              class="cursor-pointer"
-              @click="
-                () => {
-                  convertExpr(rule.expr);
-                  toggleRuleDetails(rule.id);
-                }
-              "
-            >
+            <div class="cursor-pointer" @click="toggleRuleDetails(rule.id)">
               <span v-if="!expandedRules[rule.id]">▷ </span>
               <span v-else>▽ </span>
               <strong>{{ rule.name }}</strong>
