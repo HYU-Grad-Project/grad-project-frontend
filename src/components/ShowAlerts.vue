@@ -83,8 +83,10 @@ const toggleAlertDetails = (alertId) => {
   expanded.value[alertId] = !expanded.value[alertId];
 };
 
-const getAdviceAndAlertDetail = async (alertId) => {
+const setAdvice = async (alertId) => {
   advice.value = await getAlertAdvice(alertId);
+};
+const setAlertDetail = async (alertId) => {
   alertDetail.value = await getAlertDetail(alertId);
 };
 
@@ -177,7 +179,8 @@ const setRuleValueList = async (ruleId) => {
                   class="mt-4 text-yellow-400 hover:text-white border border-yellow-400 hover:bg-yellow-500 focus:ring-4 focus:outline-none focus:ring-yellow-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center"
                   @click="
                     async () => {
-                      await getAdviceAndAlertDetail(alert.id);
+                      await setAdvice(alert.id);
+                      await setAlertDetail(alert.id);
                       await setRuleValueList(alert.rule.id);
                       userInput = advice.recommended_value;
                       showModal = true;
@@ -330,7 +333,7 @@ const setRuleValueList = async (ruleId) => {
                   class="mt-4 text-yellow-400 hover:text-white border border-yellow-400 hover:bg-yellow-500 focus:ring-4 focus:outline-none focus:ring-yellow-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center"
                   @click="
                     async () => {
-                      await getAdviceAndAlertDetail(alert.id);
+                      await setAlertDetail(alert.id);
                       await setRuleValueList(alert.rule.id);
                       showModal = true;
                     }
