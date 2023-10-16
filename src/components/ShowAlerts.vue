@@ -1,9 +1,4 @@
 <script setup>
-// import { initFlowbite } from "flowbite";
-// onMounted(() => {
-//   initFlowbite();
-// });
-
 import { ref, onMounted } from "vue";
 import {
   getAlertAdvice,
@@ -29,8 +24,9 @@ const ruleValueList = ref([]);
 
 const advice = ref();
 const alertDetail = ref();
-const expressionParts = ref([]);
 const metricList = ref({});
+
+const convertedExpr = ref({});
 
 onMounted(async () => {
   rules.value = await getRules();
@@ -38,9 +34,45 @@ onMounted(async () => {
     rule.metrics.forEach((metric) => {
       metricList.value[metric.name] = [metric.category_id, metric.id];
     });
+
+    convertedExpr.value[rule.id] = convertExpr(rule.expr);
   });
-  console.log(metricList.value);
 });
+const convertExpr = (expression) => {
+  const metricRegex = /([a-zA-Z_]+)/g;
+  const expressionParts = [];
+
+  let matches;
+  let currentIndex = 0;
+  while ((matches = metricRegex.exec(expression)) !== null) {
+    const match = matches[0];
+    const startIndex = matches.index;
+    const endIndex = startIndex + match.length;
+
+    // Text before the metric
+    if (startIndex > currentIndex) {
+      expressionParts.push({
+        type: "text",
+        text: expression.substring(currentIndex, startIndex),
+      });
+    }
+
+    // Metric itself
+    expressionParts.push({ type: "metric", metric: match });
+
+    currentIndex = endIndex;
+  }
+
+  // Add any remaining text after the last metric
+  if (currentIndex < expression.length) {
+    expressionParts.push({
+      type: "text",
+      text: expression.substring(currentIndex),
+    });
+  }
+
+  return expressionParts;
+};
 
 const showUnresolvedAlerts = async (ruleId) => {
   unresolvedAlerts.value = await getAlerts(0, ruleId);
@@ -55,40 +87,6 @@ const toggleAlertDetails = (alertId) => {
 const getAdviceAndAlertDetail = async (alertId) => {
   advice.value = await getAlertAdvice(alertId);
   alertDetail.value = await getAlertDetail(alertId);
-};
-
-const convertExpr = (expression) => {
-  const metricRegex = /([a-zA-Z_]+)/g;
-  expressionParts.value = [];
-
-  let matches;
-  let currentIndex = 0;
-  while ((matches = metricRegex.exec(expression)) !== null) {
-    const match = matches[0];
-    const startIndex = matches.index;
-    const endIndex = startIndex + match.length;
-
-    // Text before the metric
-    if (startIndex > currentIndex) {
-      expressionParts.value.push({
-        type: "text",
-        text: expression.substring(currentIndex, startIndex),
-      });
-    }
-
-    // Metric itself
-    expressionParts.value.push({ type: "metric", metric: match });
-
-    currentIndex = endIndex;
-  }
-
-  // Add any remaining text after the last metric
-  if (currentIndex < expression.length) {
-    expressionParts.value.push({
-      type: "text",
-      text: expression.substring(currentIndex),
-    });
-  }
 };
 
 const resolveChosenAlert = async (alertId) => {
@@ -181,7 +179,6 @@ const setRuleValueList = async (ruleId) => {
                     async () => {
                       await getAdviceAndAlertDetail(alert.id);
                       await setRuleValueList(alert.rule.id);
-                      convertExpr(alertDetail.rule.expr);
                       userInput = advice.recommended_value;
                       showModal = true;
                     }
@@ -204,7 +201,9 @@ const setRuleValueList = async (ruleId) => {
                     <strong>Expression:</strong>
                     <div>
                       <span
-                        v-for="(part, index) in expressionParts"
+                        v-for="(part, index) in convertedExpr[
+                          alertDetail.rule.id
+                        ]"
                         :key="index"
                       >
                         <span v-if="part.type === 'text'">{{ part.text }}</span>
@@ -332,6 +331,7 @@ const setRuleValueList = async (ruleId) => {
                   @click="
                     async () => {
                       await getAdviceAndAlertDetail(alert.id);
+                      await setRuleValueList(alert.rule.id);
                       convertExpr(alertDetail.rule.expr);
                       showModal = true;
                     }
@@ -354,7 +354,12 @@ const setRuleValueList = async (ruleId) => {
                     <strong>Expression:</strong>
                   </div>
                   <div>
-                    <span v-for="(part, index) in expressionParts" :key="index">
+                    <span
+                      v-for="(part, index) in convertedExpr[
+                        alertDetail.rule.id
+                      ]"
+                      :key="index"
+                    >
                       <span v-if="part.type === 'text'">{{ part.text }}</span>
                       <button
                         v-else
@@ -441,7 +446,10 @@ const setRuleValueList = async (ruleId) => {
               <!-- <div><strong>Expression:</strong> {{ rule.expr }}</div> -->
               <div><strong>Expression:</strong></div>
               <div>
-                <span v-for="(part, index) in expressionParts" :key="index">
+                <span
+                  v-for="(part, index) in convertedExpr[rule.id]"
+                  :key="index"
+                >
                   <span v-if="part.type === 'text'">{{ part.text }}</span>
                   <button
                     v-else
